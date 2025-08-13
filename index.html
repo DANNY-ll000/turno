@@ -228,6 +228,9 @@
                                 </svg>
                             </div>
                         </div>
+                        <p class="text-sm text-red-400 mt-3 font-medium">
+                            ⚠️ Make sure your username exists and is correct
+                        </p>
                     </div>
 
                     <div id="video-links-section" class="hidden">
@@ -248,8 +251,8 @@
                                 </svg>
                             </div>
                         </div>
-                        <p class="text-sm text-gray-400 mt-3">
-                            💡 Paste the direct link to your video or reel for targeted growth
+                        <p class="text-sm text-red-400 mt-3 font-medium">
+                            ⚠️ Make sure you copied the correct link
                         </p>
                     </div>
                 </div>
@@ -401,6 +404,9 @@
         
         // Track used combinations to prevent duplicates
         let usedCombinations = JSON.parse(localStorage.getItem('turnoUsedCombinations') || '{}');
+        
+        // Track used combinations to prevent duplicates
+        let usedCombinations = JSON.parse(localStorage.getItem('turnoUsedCombinations') || '{}');
 
         const platformLinks = {
             instagram: 'https://www.instagram.com/imdannyc4u/',
@@ -488,6 +494,15 @@
         }
 
         function selectMission(type, count) {
+            const username = document.getElementById('username-input').value.trim().toLowerCase();
+            const combinationKey = `${selectedPlatform}_${username}_${type}_${count}`;
+            
+            // Check if this combination has been used before
+            if (usedCombinations[combinationKey]) {
+                alert(`⚠️ You've already used ${count} ${type} for this username on ${selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1)}. Please choose a different amount or use a different username.`);
+                return;
+            }
+            
             const username = document.getElementById('username-input').value.trim().toLowerCase();
             const combinationKey = `${selectedPlatform}_${username}_${type}_${count}`;
             
@@ -668,6 +683,15 @@
             let existingMissions = JSON.parse(localStorage.getItem('turnoMissions') || '[]');
             existingMissions.push(missionData);
             localStorage.setItem('turnoMissions', JSON.stringify(existingMissions));
+            
+            // Save used combinations to prevent future duplicates
+            Object.keys(missions).forEach(type => {
+                if (missions[type].selected) {
+                    const combinationKey = `${selectedPlatform}_${username.toLowerCase()}_${type}_${missions[type].count}`;
+                    usedCombinations[combinationKey] = true;
+                }
+            });
+            localStorage.setItem('turnoUsedCombinations', JSON.stringify(usedCombinations));
             
             // Save used combinations to prevent future duplicates
             Object.keys(missions).forEach(type => {
