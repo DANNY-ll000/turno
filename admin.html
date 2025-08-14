@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turno Admin - Mission Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="api.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
@@ -185,11 +186,11 @@
     </div>
 
     <script>
-        let missions = JSON.parse(localStorage.getItem('turnoMissions') || '[]');
+        let missions = [];
         let filteredMissions = [...missions];
 
-        function loadMissions() {
-            missions = JSON.parse(localStorage.getItem('turnoMissions') || '[]');
+        async function loadMissions() {
+            missions = await turnoAPI.fetchMissions();
             filteredMissions = [...missions];
             updateStats();
             renderMissions();
@@ -333,19 +334,25 @@
             return icons[platform] || '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>';
         }
 
-        function updateMissionStatus(id, newStatus) {
-            missions = missions.map(mission => 
-                mission.id === id ? { ...mission, status: newStatus } : mission
-            );
-            localStorage.setItem('turnoMissions', JSON.stringify(missions));
-            loadMissions();
+        async function updateMissionStatus(id, newStatus) {
+            try {
+                await turnoAPI.updateMissionStatus(id, newStatus);
+                await loadMissions();
+            } catch (error) {
+                alert('Failed to update mission status');
+                console.error('Update error:', error);
+            }
         }
 
-        function deleteMission(id) {
+        async function deleteMission(id) {
             if (confirm('Are you sure you want to delete this mission?')) {
-                missions = missions.filter(mission => mission.id !== id);
-                localStorage.setItem('turnoMissions', JSON.stringify(missions));
-                loadMissions();
+                try {
+                    await turnoAPI.deleteMission(id);
+                    await loadMissions();
+                } catch (error) {
+                    alert('Failed to delete mission');
+                    console.error('Delete error:', error);
+                }
             }
         }
 
@@ -378,18 +385,22 @@
             URL.revokeObjectURL(url);
         }
 
-        function clearAllData() {
+        async function clearAllData() {
             if (confirm('Are you sure you want to delete ALL mission data? This action cannot be undone.')) {
-                localStorage.removeItem('turnoMissions');
-                missions = [];
-                filteredMissions = [];
-                updateStats();
-                renderMissions();
+                try {
+                    await turnoAPI.clearAllData();
+                    await loadMissions();
+                } catch (error) {
+                    alert('Failed to clear data');
+                    console.error('Clear error:', error);
+                }
             }
         }
 
         // Auto-refresh every 30 seconds
-        setInterval(loadMissions, 30000);
+        setInterval(async () => {
+            await loadMissions();
+        }, 30000);
 
         // Initial load
         loadMissions();

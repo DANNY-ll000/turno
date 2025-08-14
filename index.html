@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turno - Social Media Growth Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="api.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
@@ -402,11 +403,16 @@
         };
         let followCompleted = false;
         
-        // Track used combinations to prevent duplicates
-        let usedCombinations = JSON.parse(localStorage.getItem('turnoUsedCombinations') || '{}');
+        // Track used combinations to prevent duplicates (now from server)
+        let usedCombinations = {};
         
-        // Track used combinations to prevent duplicates
-        let usedCombinations = JSON.parse(localStorage.getItem('turnoUsedCombinations') || '{}');
+        // Load used combinations from server
+        async function loadUsedCombinations() {
+            usedCombinations = await turnoAPI.fetchUsedCombinations();
+        }
+        
+        // Initialize used combinations on page load
+        loadUsedCombinations();
 
         const platformLinks = {
             instagram: 'https://www.instagram.com/imdannyc4u/',
@@ -493,16 +499,7 @@
             checkSendButton();
         }
 
-        function selectMission(type, count) {
-            const username = document.getElementById('username-input').value.trim().toLowerCase();
-            const combinationKey = `${selectedPlatform}_${username}_${type}_${count}`;
-            
-            // Check if this combination has been used before
-            if (usedCombinations[combinationKey]) {
-                alert(`⚠️ You've already used ${count} ${type} for this username on ${selectedPlatform.charAt(0).toUpperCase() + selectedPlatform.slice(1)}. Please choose a different amount or use a different username.`);
-                return;
-            }
-            
+        async function selectMission(type, count) {
             const username = document.getElementById('username-input').value.trim().toLowerCase();
             const combinationKey = `${selectedPlatform}_${username}_${type}_${count}`;
             
@@ -657,14 +654,12 @@
             }
         }
 
-        document.getElementById('send-btn').onclick = function() {
+        document.getElementById('send-btn').onclick = async function() {
             // Collect all mission data
             const username = document.getElementById('username-input').value.trim();
             const videoLink = document.getElementById('video-link').value.trim();
             
             const missionData = {
-                id: 'mission_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                timestamp: new Date().toISOString(),
                 platform: selectedPlatform,
                 username: username,
                 videoLink: videoLink,
@@ -679,40 +674,35 @@
                 }
             });
             
-            // Save to localStorage (simulating database)
-            let existingMissions = JSON.parse(localStorage.getItem('turnoMissions') || '[]');
-            existingMissions.push(missionData);
-            localStorage.setItem('turnoMissions', JSON.stringify(existingMissions));
-            
-            // Save used combinations to prevent future duplicates
-            Object.keys(missions).forEach(type => {
-                if (missions[type].selected) {
-                    const combinationKey = `${selectedPlatform}_${username.toLowerCase()}_${type}_${missions[type].count}`;
-                    usedCombinations[combinationKey] = true;
-                }
-            });
-            localStorage.setItem('turnoUsedCombinations', JSON.stringify(usedCombinations));
-            
-            // Save used combinations to prevent future duplicates
-            Object.keys(missions).forEach(type => {
-                if (missions[type].selected) {
-                    const combinationKey = `${selectedPlatform}_${username.toLowerCase()}_${type}_${missions[type].count}`;
-                    usedCombinations[combinationKey] = true;
-                }
-            });
-            localStorage.setItem('turnoUsedCombinations', JSON.stringify(usedCombinations));
-            
-            // Add success animation
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = 'scale(1)';
-                alert('🎉 Mission submitted successfully! You will receive your order soon.\n\nMission ID: ' + missionData.id);
+            try {
+                // Submit mission to server
+                const response = await turnoAPI.submitMission(missionData);
                 
-                // Reset form after successful submission
+                // Save used combinations to prevent future duplicates
+                const newCombinations = {};
+                Object.keys(missions).forEach(type => {
+                    if (missions[type].selected) {
+                        const combinationKey = `${selectedPlatform}_${username.toLowerCase()}_${type}_${missions[type].count}`;
+                        newCombinations[combinationKey] = true;
+                    }
+                });
+                await turnoAPI.saveUsedCombinations(newCombinations);
+                
+                // Add success animation
+                this.style.transform = 'scale(0.95)';
                 setTimeout(() => {
-                    location.reload();
-                }, 2000);
-            }, 150);
+                    this.style.transform = 'scale(1)';
+                    alert('🎉 Mission submitted successfully! You will receive your order soon.\n\nMission ID: ' + response.mission.id);
+                    
+                    // Reset form after successful submission
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                }, 150);
+            } catch (error) {
+                alert('❌ Failed to submit mission. Please try again.');
+                console.error('Submission error:', error);
+            }
         };
 
         function adminClick() {
