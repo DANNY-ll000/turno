@@ -10,9 +10,21 @@
       "status": "pending",
       "id": "mission_1755193587637_0s0vec83b",
       "timestamp": "2025-08-14T17:46:27.637Z"
+    },
+    {
+      "platform": "youtube",
+      "username": "danny6+",
+      "videoLink": "d",
+      "missions": {
+        "followers": 10
+      },
+      "status": "pending",
+      "id": "mission_1755194082247_r7sn1pkfu",
+      "timestamp": "2025-08-14T17:54:42.247Z"
     }
   ],
   "usedCombinations": {
-    "youtube_d_followers_10": true
+    "youtube_d_followers_10": true,
+    "youtube_danny6+_followers_10": true
   }
 }
