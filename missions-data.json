@@ -1,1 +1,18 @@
-{"missions":[],"usedCombinations":{}}
+{
+  "missions": [
+    {
+      "platform": "youtube",
+      "username": "d",
+      "videoLink": "dddd",
+      "missions": {
+        "followers": 10
+      },
+      "status": "pending",
+      "id": "mission_1755193587637_0s0vec83b",
+      "timestamp": "2025-08-14T17:46:27.637Z"
+    }
+  ],
+  "usedCombinations": {
+    "youtube_d_followers_10": true
+  }
+}
