@@ -655,9 +655,29 @@
         }
 
         document.getElementById('send-btn').onclick = async function() {
+            console.log('🚀 Send button clicked');
+            
             // Collect all mission data
             const username = document.getElementById('username-input').value.trim();
             const videoLink = document.getElementById('video-link').value.trim();
+            
+            // Validate required fields
+            if (!username) {
+                alert('❌ Please enter your username');
+                return;
+            }
+            
+            if (!videoLink) {
+                alert('❌ Please enter your video/reel link');
+                return;
+            }
+            
+            // Check if any mission is selected
+            const anyMissionSelected = Object.values(missions).some(mission => mission.selected);
+            if (!anyMissionSelected) {
+                alert('❌ Please select at least one mission');
+                return;
+            }
             
             const missionData = {
                 platform: selectedPlatform,
@@ -674,9 +694,17 @@
                 }
             });
             
+            console.log('📦 Mission data prepared:', missionData);
+            
+            // Disable button during submission
+            this.disabled = true;
+            this.style.opacity = '0.7';
+            this.innerHTML = '<span class="relative z-10">SENDING...</span>';
+            
             try {
                 // Submit mission to server
                 const response = await turnoAPI.submitMission(missionData);
+                console.log('✅ Server response:', response);
                 
                 // Save used combinations to prevent future duplicates
                 const newCombinations = {};
@@ -700,8 +728,13 @@
                     }, 2000);
                 }, 150);
             } catch (error) {
-                alert('❌ Failed to submit mission. Please try again.');
                 console.error('Submission error:', error);
+                alert('❌ Failed to submit mission. Please try again.\n\nError: ' + error.message);
+                
+                // Re-enable button
+                this.disabled = false;
+                this.style.opacity = '1';
+                this.innerHTML = '<span class="relative z-10">SEND MISSIONS</span>';
             }
         };
 
