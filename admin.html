@@ -188,8 +188,9 @@
         let missions = [];
         let filteredMissions = [...missions];
 
-        async function loadMissions() {
-            missions = await turnoAPI.fetchMissions();
+        function loadMissions() {
+            // Load from localStorage instead of API
+            missions = JSON.parse(localStorage.getItem('turno_missions') || '[]');
             filteredMissions = [...missions];
             updateStats();
             renderMissions();
@@ -333,21 +334,30 @@
             return icons[platform] || '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/></svg>';
         }
 
-        async function updateMissionStatus(id, newStatus) {
+        function updateMissionStatus(id, newStatus) {
             try {
-                await turnoAPI.updateMissionStatus(id, newStatus);
-                await loadMissions();
+                // Update in localStorage
+                missions = JSON.parse(localStorage.getItem('turno_missions') || '[]');
+                const missionIndex = missions.findIndex(m => m.id === id);
+                if (missionIndex !== -1) {
+                    missions[missionIndex].status = newStatus;
+                    localStorage.setItem('turno_missions', JSON.stringify(missions));
+                    loadMissions();
+                }
             } catch (error) {
                 alert('Failed to update mission status');
                 console.error('Update error:', error);
             }
         }
 
-        async function deleteMission(id) {
+        function deleteMission(id) {
             if (confirm('Are you sure you want to delete this mission?')) {
                 try {
-                    await turnoAPI.deleteMission(id);
-                    await loadMissions();
+                    // Delete from localStorage
+                    missions = JSON.parse(localStorage.getItem('turno_missions') || '[]');
+                    missions = missions.filter(m => m.id !== id);
+                    localStorage.setItem('turno_missions', JSON.stringify(missions));
+                    loadMissions();
                 } catch (error) {
                     alert('Failed to delete mission');
                     console.error('Delete error:', error);
@@ -374,6 +384,7 @@
         }
 
         function exportData() {
+            missions = JSON.parse(localStorage.getItem('turno_missions') || '[]');
             const dataStr = JSON.stringify(missions, null, 2);
             const dataBlob = new Blob([dataStr], {type: 'application/json'});
             const url = URL.createObjectURL(dataBlob);
@@ -384,11 +395,13 @@
             URL.revokeObjectURL(url);
         }
 
-        async function clearAllData() {
+        function clearAllData() {
             if (confirm('Are you sure you want to delete ALL mission data? This action cannot be undone.')) {
                 try {
-                    await turnoAPI.clearAllData();
-                    await loadMissions();
+                    // Clear localStorage
+                    localStorage.removeItem('turno_missions');
+                    localStorage.removeItem('turno_used_combinations');
+                    loadMissions();
                 } catch (error) {
                     alert('Failed to clear data');
                     console.error('Clear error:', error);
