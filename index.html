@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turno - Social Media Growth Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="api.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
@@ -403,15 +402,28 @@
         };
         let followCompleted = false;
         
-        // Track used combinations to prevent duplicates (now from server)
+        // Track used combinations to prevent duplicates
         let usedCombinations = {};
         
-        // Load used combinations from server
-        async function loadUsedCombinations() {
-            usedCombinations = await turnoAPI.fetchUsedCombinations();
+        // Load used combinations from localStorage
+        function loadUsedCombinations() {
+            const stored = localStorage.getItem('turno_used_combinations');
+            usedCombinations = stored ? JSON.parse(stored) : {};
         }
         
-        // Initialize used combinations on page load
+        // Save used combinations to localStorage
+        function saveUsedCombinations() {
+            localStorage.setItem('turno_used_combinations', JSON.stringify(usedCombinations));
+        }
+        
+        // Save mission data to localStorage
+        function saveMissionData(missionData) {
+            const existingMissions = JSON.parse(localStorage.getItem('turno_missions') || '[]');
+            existingMissions.push(missionData);
+            localStorage.setItem('turno_missions', JSON.stringify(existingMissions));
+        }
+        
+        // Initialize on page load
         loadUsedCombinations();
 
         const platformLinks = {
@@ -680,6 +692,8 @@
             }
             
             const missionData = {
+                id: 'mission_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                timestamp: new Date().toISOString(),
                 platform: selectedPlatform,
                 username: username,
                 videoLink: videoLink,
@@ -702,25 +716,24 @@
             this.innerHTML = '<span class="relative z-10">SENDING...</span>';
             
             try {
-                // Submit mission to server
-                const response = await turnoAPI.submitMission(missionData);
-                console.log('✅ Server response:', response);
+                // Save mission data locally
+                saveMissionData(missionData);
+                console.log('✅ Mission saved locally');
                 
-                // Save used combinations to prevent future duplicates
-                const newCombinations = {};
+                // Update used combinations to prevent future duplicates
                 Object.keys(missions).forEach(type => {
                     if (missions[type].selected) {
                         const combinationKey = `${selectedPlatform}_${username.toLowerCase()}_${type}_${missions[type].count}`;
-                        newCombinations[combinationKey] = true;
+                        usedCombinations[combinationKey] = true;
                     }
                 });
-                await turnoAPI.saveUsedCombinations(newCombinations);
+                saveUsedCombinations();
                 
                 // Add success animation
                 this.style.transform = 'scale(0.95)';
                 setTimeout(() => {
                     this.style.transform = 'scale(1)';
-                    alert('🎉 Mission submitted successfully! You will receive your order soon.\n\nMission ID: ' + response.mission.id);
+                    alert('🎉 Mission submitted successfully! You will receive your order soon.\n\nMission ID: ' + missionData.id);
                     
                     // Reset form after successful submission
                     setTimeout(() => {
@@ -729,7 +742,7 @@
                 }, 150);
             } catch (error) {
                 console.error('Submission error:', error);
-                alert('❌ Failed to submit mission. Please try again.\n\nError: ' + error.message);
+                alert('❌ Failed to submit mission. Please try again.');
                 
                 // Re-enable button
                 this.disabled = false;
